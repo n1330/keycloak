@@ -986,6 +986,7 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
     $scope.tlsClientCertificateBoundAccessTokens = false;
 
     $scope.accessTokenLifespan = TimeUnit2.asUnit(client.attributes['access.token.lifespan']);
+    $scope.offlineTokenLifespan = TimeUnit2.asUnit(client.attributes['offline.token.lifespan']);
 
     if(client.origin) {
         if ($scope.access.viewRealm) {
@@ -1291,6 +1292,15 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
             }
         } else {
             $scope.clientEdit.attributes['access.token.lifespan'] = null;
+        }
+        if ($scope.offlineTokenLifespan.time) {
+            if ($scope.offlineTokenLifespan.time === -1) {
+                $scope.clientEdit.attributes['offline.token.lifespan'] = -1;
+            } else {
+                $scope.clientEdit.attributes['offline.token.lifespan'] = $scope.offlineTokenLifespan.toSeconds();
+            }
+        } else {
+            $scope.clientEdit.attributes['offline.token.lifespan'] = null;
         }
     }
 

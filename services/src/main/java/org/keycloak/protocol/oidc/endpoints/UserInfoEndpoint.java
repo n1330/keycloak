@@ -237,7 +237,7 @@ public class UserInfoEndpoint {
             return userSession;
         } else {
             offlineUserSession = new UserSessionCrossDCManager(session).getUserSessionWithClient(realm, token.getSessionState(), true, client.getId());
-            if (AuthenticationManager.isOfflineSessionValid(realm, offlineUserSession)) {
+            if (AuthenticationManager.isOfflineSessionValid(realm, offlineUserSession, client)) {
                 event.session(offlineUserSession);
                 return offlineUserSession;
             }

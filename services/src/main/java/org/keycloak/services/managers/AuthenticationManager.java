@@ -145,7 +145,7 @@ public class AuthenticationManager {
         return sessionIdleOk && sessionMaxOk;
     }
 
-    public static boolean isOfflineSessionValid(RealmModel realm, UserSessionModel userSession) {
+    public static boolean isOfflineSessionValid(RealmModel realm, UserSessionModel userSession, ClientModel client) {
         if (userSession == null) {
             logger.debug("No offline user session");
             return false;
@@ -153,6 +153,16 @@ public class AuthenticationManager {
         int currentTime = Time.currentTime();
         // Additional time window is added for the case when session was updated in different DC and the update to current DC was postponed
         int maxIdle = realm.getOfflineSessionIdleTimeout() + SessionTimeoutHelper.IDLE_TIMEOUT_WINDOW_SECONDS;
+
+        // ユーザごとのタイムアウト確認はここで実装する
+
+
+        String clientOfflineTokenLifespan = client.getAttribute("offline.token.lifespan");
+        AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
+        if (clientOfflineTokenLifespan != null && !clientOfflineTokenLifespan.trim().isEmpty()) {
+          maxIdle = Integer.parseInt(clientOfflineTokenLifespan) + SessionTimeoutHelper.IDLE_TIMEOUT_WINDOW_SECONDS;
+          return clientSession.getTimestamp() + maxIdle > currentTime;
+        }
 
         // KEYCLOAK-7688 Offline Session Max for Offline Token
         if (realm.isOfflineSessionMaxLifespanEnabled()) {
@@ -1187,7 +1197,8 @@ public class AuthenticationManager {
                 // Check if accessToken was for the offline session.
                 if (!isCookie) {
                     UserSessionModel offlineUserSession = session.sessions().getOfflineUserSession(realm, token.getSessionState());
-                    if (isOfflineSessionValid(realm, offlineUserSession)) {
+                    ClientModel client = realm.getClientByClientId(token.getIssuedFor());
+                    if (isOfflineSessionValid(realm, offlineUserSession, client)) {
                         user = offlineUserSession.getUser();
                         return new AuthResult(user, offlineUserSession, token);
                     }

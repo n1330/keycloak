@@ -112,7 +112,8 @@ public class TokenManager {
             if (userSession != null) {
 
                 // Revoke timeouted offline userSession
-                if (!AuthenticationManager.isOfflineSessionValid(realm, userSession)) {
+                ClientModel client = session.getContext().getClient();
+                if (!AuthenticationManager.isOfflineSessionValid(realm, userSession, client)) {
                     sessionManager.revokeOfflineUserSession(userSession);
                     throw new OAuthErrorException(OAuthErrorException.INVALID_GRANT, "Offline session not active", "Offline session not active");
                 }
@@ -222,13 +223,16 @@ public class TokenManager {
             valid = isUserValid(session, realm, token, userSession);
         } else {
             userSession = new UserSessionCrossDCManager(session).getUserSessionWithClient(realm, token.getSessionState(), true, client.getId());
-            if (AuthenticationManager.isOfflineSessionValid(realm, userSession)) {
+            if (AuthenticationManager.isOfflineSessionValid(realm, userSession, client)) {
                 valid = isUserValid(session, realm, token, userSession);
             }
         }
 
         if (valid) {
-            userSession.setLastSessionRefresh(Time.currentTime());
+            int currentTime = Time.currentTime();
+            AuthenticatedClientSessionModel clientSession = userSession.getAuthenticatedClientSessionByClient(client.getId());
+            clientSession.setTimestamp(currentTime);
+            userSession.setLastSessionRefresh(currentTime);
         }
 
         return valid;
